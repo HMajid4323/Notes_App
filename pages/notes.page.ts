@@ -177,7 +177,7 @@ class Actions {
     }
 
     async reload() {
-        await this.page.reload();
+        await this.page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
     }
 }
 

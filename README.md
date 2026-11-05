@@ -13,7 +13,7 @@ Playwright end-to-end and API tests for the Notes application.
 Install the project dependencies and Playwright's Chromium browser:
 
 ```bash
-npm install
+npm ci
 npx playwright install chromium
 ```
 

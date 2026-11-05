@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "tests:All": "npx playwright test",
-    "tests:UI": "npx playwright test A-UI-CRUD.spec.ts --headed",
-    "tests:API": "npx playwright test B-API-CRUD.spec.ts"
+    "tests:UI": "npx playwright test A-UI-CRUD.spec.ts",
+    "tests:API": "npx playwright test B-API-CRUD.spec.ts",
+    "tests:Cross-Layer": "npx playwright test C-Integration.spec.ts",
+    "tests:Mocking": "npx playwright test M-Mocking.spec.ts"
   },
   "keywords": [],
   "author": "",

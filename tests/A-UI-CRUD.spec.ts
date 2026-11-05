@@ -12,12 +12,14 @@ test.describe('UI CRUD Operations', async () => {
     let notesPage: NotesPage;
     let basePage: BasePage;
 
-    test('Create, Edit and Delete notes with persistence checks', async ({page, request}) => {
-
+    test.beforeEach(async ({page}) => {
         loginPage = new LoginPage(page);
         notesPage = new NotesPage(page);
         apiHelper = new BaseAPIHelper; 
         basePage = new BasePage(page);
+    });
+
+    test('Create, Edit and Delete notes with persistence checks', async ({page, request}) => {
 
         const user = await apiHelper.generateUniqueUser();
         const payload = { ...payloads.RegisterUser, name: user.name, email: user.email, password: user.password };
