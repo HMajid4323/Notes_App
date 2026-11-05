@@ -8,6 +8,7 @@ export class BaseAPIHelper {
   RegisterAPIUrl = API_BASE + '/users/register';
   LoginAPIUrl = API_BASE + '/users/login';
   NotesAPIUrl = API_BASE + '/notes';
+  DeleteAccountAPIUrl = API_BASE + '/users/delete-account';
 
 
 
@@ -82,13 +83,11 @@ export class BaseAPIHelper {
     return response;
   }
 
-  // export async function deleteUserViaApi(
-  //   request: APIRequestContext,
-  //   token: string
-  // ): Promise<void> {
-  //   await request.delete(`${API_BASE}/users/delete-account`, {
-  //     headers: { 'x-auth-token': token },
-  //   });
-  // }
+  async deleteUserViaApi(request: APIRequestContext, URL: string, token: string): Promise<APIResponse> {
+    const response = await request.delete(URL, {
+      headers: { 'x-auth-token': token },
+    });
+    return response;
+  }
 
 }

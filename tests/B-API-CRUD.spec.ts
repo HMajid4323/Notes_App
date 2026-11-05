@@ -104,40 +104,58 @@ test.describe('API CRUD Operations', () => {
         expect(createNote.status()).toBe(401);
     });
 
-    test('User A cannot view or modify User B note', async () => {
+    test('User A cannot view or modify User B note', async ({request}) => {
+        const UserA = await apiHelper.generateUniqueUser();
+        const UserB = await apiHelper.generateUniqueUser();
+        const registerPayloadA = { ...payloads.RegisterUser, name: UserA.name, email: UserA.email, password: UserA.password };
+        const registerPayloadB = { ...payloads.RegisterUser, name: UserB.name, email: UserB.email, password: UserB.password };
 
+        const userIdA = await apiHelper.registerUserViaAPI(request, apiHelper.RegisterAPIUrl, registerPayloadA);
+        const userIdB = await apiHelper.registerUserViaAPI(request, apiHelper.RegisterAPIUrl, registerPayloadB);
+        const loginPayloadA = { ...payloads.LoginUser, email: UserA.email, password: UserA.password }
+        const loginResponseA = await apiHelper.loginViaApi(request, apiHelper.LoginAPIUrl, loginPayloadA);
+        const loginResponseBodyA = await loginResponseA.json();
+        const tokenA = loginResponseBodyA.data.token;
+        const loginPayloadB = { ...payloads.LoginUser, email: UserB.email, password: UserB.password }
+        const loginResponseB = await apiHelper.loginViaApi(request, apiHelper.LoginAPIUrl, loginPayloadB);
+        const loginResponseBodyB = await loginResponseB.json();
+        const tokenB = loginResponseBodyB.data.token;
+        let noteB: string;
+
+
+        try {
+            await test.step('User B creates a note', async () => {
+                const noteTitle = 'B private note';
+                const noteDescription = 'Should not be visible to A';
+                const payload = { ...payloads.CreateNote, title: noteTitle, description: noteDescription, category: 'Personal', completed: false };
+                const createNoteB = await apiHelper.createNoteViaApi(request, apiHelper.NotesAPIUrl, tokenB, payload);
+                const createNoteBBody = await createNoteB.json();
+                noteB = createNoteBBody.data.id;
+                console.log(`Note created successfully. Title: ${createNoteBBody.data.title}, Description: ${createNoteBBody.data.description}`);
+            });
+
+            await test.step('User A lists notes and must not see B note', async () => {
+                const listNoteResponse = await apiHelper.listNotesViaApi(request, apiHelper.NotesAPIUrl, tokenA);
+                const listNoteBody = await listNoteResponse.json();
+                expect(listNoteBody.data).not.toEqual(
+                    expect.arrayContaining([expect.objectContaining({ id: noteB })])
+                );
+            });
+
+            await test.step('User A tries to delete B note and gets 401/403', async () => {
+                const DeleteURL = apiHelper.NotesAPIUrl + '/' + noteB;
+                const deleteNoteResponse = await apiHelper.deleteNoteViaApi(request, DeleteURL, tokenA);
+                expect(deleteNoteResponse.status()).toBe(404);
+                console.log('User A cannot find notes from User B')
+            });
+        }
+        finally {
+                const deleteAAccountResponse = await apiHelper.deleteUserViaApi(request, apiHelper.DeleteAccountAPIUrl, tokenA);
+                expect(deleteAAccountResponse.status()).toBe(200);
+                console.log('UserA Deleted');
+                const deleteBAccountResponse = await apiHelper.deleteUserViaApi(request, apiHelper.DeleteAccountAPIUrl, tokenB);
+                expect(deleteBAccountResponse.status()).toBe(200);
+                console.log('UserB Deleted');
+        }
     });
 });
-
-
-//   test('User A cannot view or modify User B note', async ({ apiContext }) => {
-//     const userA = uniqueUser();
-//     const userB = uniqueUser();
-
-//     const tokenA = await registerUser(apiContext, userA);
-//     const tokenB = await registerUser(apiContext, userB);
-
-//     try {
-//       await test.step('User B creates a note', async () => {
-//         const noteB = await createNoteViaApi(apiContext, tokenB, {
-//           title: 'B private note',
-//           description: 'Should not be visible to A',
-//           category: 'Personal',
-//         });
-
-//         await test.step('User A lists notes and must not see B note', async () => {
-//           const notesA = await listNotesViaApi(apiContext, tokenA);
-//           expect(notesA.find((n) => n.id === noteB.id)).toBeUndefined();
-//         });
-
-//         await test.step('User A tries to delete B note and gets 401/403', async () => {
-//           const res = await apiContext.delete(`${API_BASE}/notes/${noteB.id}`, {
-//             headers: { 'x-auth-token': tokenA },
-//           });
-//           expect([401, 403, 404]).toContain(res.status());
-//         });
-//       });
-//     } finally {
-//       await deleteUserViaApi(apiContext, tokenA).catch(() => {});
-//       await deleteUserViaApi(apiContext, tokenB).catch(() => {});
-//     }
