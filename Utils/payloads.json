@@ -3,5 +3,25 @@
     "name": "Hassaan Test1",
     "email": "hassaan.maajid@example1.com",
     "password": "testingpwd1"
+    },
+
+    "LoginUser": {
+    "email": "hassaan.maajid@example1.com",
+    "password": "testingpwd1"
+    },
+
+    "CreateNote": {
+    "title": "test",
+    "description": "testing",
+    "category": "Work",
+    "completed": false
+    },
+
+    "UpdateNote": {
+    "id": "6aec4c671acec30296fa1ebb",
+    "title": "test",
+    "description": "testing",
+    "category": "Work",
+    "completed": false
     }
 }
