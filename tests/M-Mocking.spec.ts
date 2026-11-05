@@ -1,23 +1,20 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../pages/login.page';
 import { NotesPage } from '../pages/notes.page';
-import {BasePage} from '../pages/base.page';
-import {UI_BASE} from '../Utils/global.var';
-import {BaseAPIHelper}  from '../Utils/api.helper';
+import { BasePage } from '../pages/base.page';
+import { UI_BASE } from '../Utils/global.var';
+import { BaseAPIHelper } from '../Utils/api.helper';
 import payloads from '../Utils/payloads.json';
+import mockData from '../Utils/mocks/mocksData.json';
 
 const NOTES_LIST_PATTERN = '**/notes/api/notes';
-let loginPage: LoginPage;
-let basePage: BasePage;
-let notesPage: NotesPage;
-let apiHelper: BaseAPIHelper
 const loginURL = UI_BASE + '/login';
 
 test.describe('M1: Deterministic notes list', () => {
   test('UI renders synthetic notes from fulfilled route', async ({page, request}) => {
-    
-    apiHelper = new BaseAPIHelper();
+    const apiHelper = new BaseAPIHelper();
     let intercepted = false;
+    
     const testUser = await apiHelper.generateUniqueUser();
     const payload = { ...payloads.RegisterUser, name: testUser.name, email: testUser.email, password: testUser.password };
     await apiHelper.registerUserViaAPI(request, apiHelper.RegisterAPIUrl, payload);
@@ -27,43 +24,20 @@ test.describe('M1: Deterministic notes list', () => {
         return route.continue();
       }
       intercepted = true;
+      // Using the imported mock fixture
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          status: 200,
-          message: 'Notes fetched successfully',
-          data: [
-            {
-              id: 'mock-1',
-              title: 'Mock Note 1',
-              description: 'First note',
-              category: 'Home',
-              completed: false,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            {
-              id: 'mock-2',
-              title: 'Mock Note 2',
-              description: 'Second note',
-              category: 'Work',
-              completed: false,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ],
-        }),
+        json: mockData.SuccessNotesList, 
+      });
     });
-});
 
-    loginPage = new LoginPage(page);
-    basePage = new BasePage(page);
+    const loginPage = new LoginPage(page);
+    const notesPage = new NotesPage(page);
+    
+    // Ensuring we wait for the intercepted response
     const notesResponsePromise = page.waitForResponse(
-      response =>
-        response.url().includes('/notes/api/notes') &&
-        response.request().method() === 'GET'
+      response => response.url().includes('/notes/api/notes') && response.request().method() === 'GET'
     );
 
     await loginPage.actions.navigateToLogin(loginURL);
@@ -72,19 +46,16 @@ test.describe('M1: Deterministic notes list', () => {
 
     expect(intercepted).toBe(true);
 
-    const notesPage = new NotesPage(page);
-    await notesPage.assertions.verifyNoteCardVisibleInList('Mock Note 1','First note');
-    await notesPage.assertions.verifyNoteCardVisibleInList('Mock Note 2','Second note');
+    await notesPage.assertions.verifyNoteCardVisibleInList('Mock Note 1', 'First note');
+    await notesPage.assertions.verifyNoteCardVisibleInList('Mock Note 2', 'Second note');
 
     await page.unroute(NOTES_LIST_PATTERN);
   });
 });
 
-
 test.describe('M2: Expired session', () => {
   test('401 on notes endpoint should trigger logout or error message', async ({page, request}) => {
-
-    apiHelper = new BaseAPIHelper();
+    const apiHelper = new BaseAPIHelper();
     const testUser = await apiHelper.generateUniqueUser();
     const payload = { ...payloads.RegisterUser, name: testUser.name, email: testUser.email, password: testUser.password };
     await apiHelper.registerUserViaAPI(request, apiHelper.RegisterAPIUrl, payload);
@@ -93,25 +64,22 @@ test.describe('M2: Expired session', () => {
       if (route.request().method() !== 'GET') {
         return route.continue();
       }
+      // Using the imported mock fixture
       await route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({
-          success: false,
-          status: 401,
-          message: 'Access token is not valid or has expired',
-        }),
+        json: mockData.Unauthorized401,
       });
     });
 
-    loginPage = new LoginPage(page);
+    const loginPage = new LoginPage(page);
     const notesResponsePromise = page.waitForResponse(
-      response => response.url().includes('/notes/api/notes')
-        && response.request().method() === 'GET',
+      response => response.url().includes('/notes/api/notes') && response.request().method() === 'GET'
     );
 
     await loginPage.actions.navigateToLogin(loginURL);
     await loginPage.actions.login(testUser.email, testUser.password);
+    
     const notesResponse = await notesResponsePromise;
     expect(notesResponse.status()).toBe(401);
 
@@ -127,17 +95,15 @@ test.describe('M2: Expired session', () => {
 });
 
 test.describe('M3: Failed mutation', () => {
-
   test('500 on create should not persist', async ({page, request}) => {
-
-    const CREATE_PATTERN = '**/notes/api/notes**'
-    apiHelper = new BaseAPIHelper();
-    
+    const CREATE_PATTERN = '**/notes/api/notes**';
+    const apiHelper = new BaseAPIHelper();
     
     const testUser = await apiHelper.generateUniqueUser();
     const payloadR = { ...payloads.RegisterUser, name: testUser.name, email: testUser.email, password: testUser.password };
     await apiHelper.registerUserViaAPI(request, apiHelper.RegisterAPIUrl, payloadR);
-    const payloadL = { ...payloads.LoginUser, email: testUser.email, password: testUser.password }
+    
+    const payloadL = { ...payloads.LoginUser, email: testUser.email, password: testUser.password };
     const loginResponse = await apiHelper.loginViaApi(request, apiHelper.LoginAPIUrl, payloadL);
     const loginBody = await loginResponse.json();
     const token = loginBody.data.token;
@@ -148,22 +114,19 @@ test.describe('M3: Failed mutation', () => {
         return route.continue();
       }
       intercepted = true;
+      // Using the imported mock fixture
       await route.fulfill({
         status: 500,
         contentType: 'application/json',
-        body: JSON.stringify({
-          success: false,
-          status: 500,
-          message: 'Internal Server Error',
-        }),
+        json: mockData.InternalServerError500,
       });
     });
 
-    loginPage = new LoginPage(page);
+    const loginPage = new LoginPage(page);
     await loginPage.actions.navigateToLogin(loginURL);
     await loginPage.actions.login(testUser.email, testUser.password);
 
-    notesPage = new NotesPage(page);
+    const notesPage = new NotesPage(page);
     
     const noteTitle = 'Failed Note Title';
     const noteDescription = 'This note should fail to save.';
@@ -177,7 +140,7 @@ test.describe('M3: Failed mutation', () => {
       .getByTestId('note-card')
       .filter({ hasText: noteTitle })
       .isVisible()
-      .catch(() => false)
+      .catch(() => false);
 
     console.log(`[M3 Observed] Note visible after 500: ${noteVisible}`);
 
