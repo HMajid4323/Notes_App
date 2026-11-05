@@ -32,7 +32,7 @@ test.describe('API CRUD Operations', () => {
             expect(loginBody.data.token).not.toBe("");
             expect(loginBody.data.name).toBe(user.name);
             expect(loginBody.data.email).toBe(user.email.toLowerCase());
-            console.log(`User logged in successfully. Name: ${user.name}, Email: ${user.email},Token: ${loginBody.data.token}`);
+            console.log(`User logged in successfully. Name: ${user.name}, Email: ${user.email}`);
             token = loginBody.data.token;
         });
 
@@ -96,12 +96,19 @@ test.describe('API CRUD Operations', () => {
 
         });
     });
+
+    test('API Fails without Auth Token', async ({request}) => {
+        const emptyToken = "";
+        const payload = payloads.CreateNote;
+        const createNote = await apiHelper.createNoteViaApi(request,apiHelper.NotesAPIUrl, emptyToken, payload)
+        expect(createNote.status()).toBe(401);
+    });
+
+    test('User A cannot view or modify User B note', async () => {
+
+    });
 });
 
-//   test('Protected operation without auth returns 401', async ({ apiContext }) => {
-//     const res = await apiContext.get(`${API_BASE}/notes`);
-//     expect(res.status()).toBe(401);
-//   });
 
 //   test('User A cannot view or modify User B note', async ({ apiContext }) => {
 //     const userA = uniqueUser();
