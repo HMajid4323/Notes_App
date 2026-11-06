@@ -71,7 +71,8 @@ test.describe('Cross-Layer Persistence', async () => {
             const updatedNote = body.data?.find((note: { id: string }) => note.id === noteId);
 
             return updatedNote ? { title: updatedNote.title, description: updatedNote.description } : null;
-            }, {
+            }, 
+            {
                 message: 'The UI-edited note should eventually be reflected by the API',
                 timeout: 10_000,
                 intervals: [250, 500, 1000],
